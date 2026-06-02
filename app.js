@@ -1,5 +1,5 @@
 // ---------- VARIABLES GLOBALES ----------
-let ageChartInstance = null, eduChartInstance = null, servicesChartInstance = null, healthChartInstance = null, explorerChartInstance = null;
+let ageChartInstance = null, eduChartInstance = null, servicesChartInstance = null, healthChartInstance = null, activityChartInstance = null, explorerChartInstance = null;
 let map, macroLayer, distritoLayer;
 let currentMacroGeoJSON = null;
 let macroNameProperty = null;
@@ -91,12 +91,14 @@ function updateDashboard(macro, distrito) {
     updateEduChart(data);
     updateServicesChart(data);
     updateHealthChart(data);
+    updateActivityChart(data);
     updateExplorerChart(macro, distrito);
 }
 
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.font.family = "'Inter', sans-serif";
 
+// ---------- GRÁFICO DE EDADES ----------
 function updateAgeChart(data) {
     const ctx = document.getElementById('ageChart').getContext('2d');
     const grupos = ['0-19', '20-39', '40-59', '60+'];
@@ -115,6 +117,7 @@ function updateAgeChart(data) {
     });
 }
 
+// ---------- GRÁFICO DE EDUCACIÓN (DONA) ----------
 function updateEduChart(data) {
     const ctx = document.getElementById('eduChart').getContext('2d');
     const niveles = ['Ninguno', 'Primaria', 'Secundaria', 'Superior'];
@@ -133,6 +136,7 @@ function updateEduChart(data) {
     });
 }
 
+// ---------- GRÁFICO DE SERVICIOS BÁSICOS ----------
 function updateServicesChart(data) {
     const ctx = document.getElementById('servicesChart').getContext('2d');
     const valores = [data['agua cañería']||0, data['agua pileta pública']||0, data['energia electrica servicio publico']||0, data['energia electrica notiene']||0];
@@ -143,6 +147,7 @@ function updateServicesChart(data) {
     });
 }
 
+// ---------- GRÁFICO DE SALUD (COBERTURA DE AFILIACIÓN) ----------
 function updateHealthChart(data) {
     const ctx = document.getElementById('healthChart').getContext('2d');
     const categorias = ['SUS', 'Caja de Salud', 'Seguro Privado', 'Ninguna cobertura'];
@@ -161,6 +166,32 @@ function updateHealthChart(data) {
     });
 }
 
+// ---------- GRÁFICO DE ACTIVIDAD ECONÓMICA (RAMAS) ----------
+function updateActivityChart(data) {
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const actividades = [
+        'Agricultura', 'Comercio', 'Manufactura', 'Construcción', 
+        'Transporte', 'Alojamiento y comida', 'Enseñanza', 'Salud y asistencia', 'Otras actividades'
+    ];
+    const valores = [
+        (data['actividad agricultura hombre']||0) + (data['actividad agricultura mujer']||0),
+        (data['actividad comercio hombre']||0) + (data['actividad comercio mujer']||0),
+        (data['actividad manufactura hombre']||0) + (data['actividad manufactura mujer']||0),
+        (data['actividad construccion hombre']||0) + (data['actividad construccion mujer']||0),
+        (data['actividad transporte hombre']||0) + (data['actividad transporte mujer']||0),
+        (data['actividad alojamiento y comida hombre']||0) + (data['actividad alojamiento y comida mujer']||0),
+        (data['actividad enseñanza hombre']||0) + (data['actividad enseñanza mujer']||0),
+        (data['actividad salud y asistencia hombre']||0) + (data['actividad salud y asistencia mujer']||0),
+        (data['actividad otras hombre']||0) + (data['actividad otras mujer']||0)
+    ];
+    if (activityChartInstance) { activityChartInstance.data.datasets[0].data = valores; activityChartInstance.update(); return; }
+    activityChartInstance = new Chart(ctx, {
+        type: 'bar', data: { labels: actividades, datasets: [{ label: 'Personas', data: valores, backgroundColor: 'rgba(245,158,11,0.7)', borderColor: 'rgba(245,158,11,1)', borderRadius: 6 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toLocaleString('es-BO')} personas` } } }, scales: { x: { beginAtZero: true, title: { display: true, text: 'Número de personas' } }, y: { title: { display: true, text: 'Rama de actividad' } } } }
+    });
+}
+
+// ---------- EXPLORADOR DE VARIABLES ----------
 function updateExplorerChart(macro, distrito) {
     const selected = variableSelect.value;
     if (!selected) return;
@@ -175,14 +206,11 @@ function updateExplorerChart(macro, distrito) {
 // ---------- MAPA INTERACTIVO ----------
 function initMap() {
     map = L.map('map').setView([-16.5, -68.15], 11);
-    // Fondo satelital (ESRI)
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-        maxZoom: 18,
-        minZoom: 10
+        maxZoom: 18, minZoom: 10
     }).addTo(map);
 
-    // Cargar macrodistritos
     fetch('macrodistritos.geojson')
         .then(response => response.json())
         .then(data => {
@@ -204,7 +232,6 @@ function initMap() {
         })
         .catch(err => console.error('Error cargando macrodistritos:', err));
 
-    // Cargar distritos
     fetch('distritos.geojson')
         .then(response => response.json())
         .then(data => {
@@ -224,27 +251,14 @@ function initMap() {
                     layer.on('click', () => {
                         const macroActual = macroSelect.value;
                         if (macroActual !== 'ALL') {
-                            // Resetear estilos de todos los distritos y macrodistritos
-                            distritoLayer.eachLayer(l => {
-                                l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' });
-                                l.closePopup();
-                            });
-                            if (macroLayer) {
-                                macroLayer.eachLayer(l => l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 }));
-                            }
-                            // Resaltar este distrito en azul
+                            distritoLayer.eachLayer(l => { l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' }); l.closePopup(); });
+                            if (macroLayer) macroLayer.eachLayer(l => l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 }));
                             layer.setStyle({ color: '#3b82f6', weight: 4, fillOpacity: 0.3 });
                             layer.bringToFront();
                             layer.openPopup();
-                            // Actualizar selector de distrito
                             const option = Array.from(distritoSelect.options).find(opt => opt.text.includes(nombre));
-                            if (option) {
-                                distritoSelect.value = option.value;
-                                updateDashboard(macroActual, option.value);
-                            }
-                        } else {
-                            alert('Primero selecciona un macrodistrito en el filtro lateral');
-                        }
+                            if (option) { distritoSelect.value = option.value; updateDashboard(macroActual, option.value); }
+                        } else alert('Primero selecciona un macrodistrito en el filtro lateral');
                     });
                 }
             }).addTo(map);
@@ -266,17 +280,11 @@ function highlightMacroOnMap(macroName) {
         map.fitBounds(bounds);
         macroLayer.eachLayer(layer => {
             const layerName = layer.feature.properties[macroNameProperty]?.toString();
-            if (layerName === macroName) {
-                layer.setStyle({ color: '#ef4444', weight: 4, fillOpacity: 0.4 }); // ROJO
-                layer.bringToFront();
-            } else {
-                layer.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 });
-            }
+            if (layerName === macroName) { layer.setStyle({ color: '#ef4444', weight: 4, fillOpacity: 0.4 }); layer.bringToFront(); }
+            else layer.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 });
         });
         if (distritoLayer) distritoLayer.eachLayer(l => l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' }));
-    } else {
-        console.warn(`Macrodistrito "${macroName}" no encontrado en el GeoJSON`);
-    }
+    } else console.warn(`Macrodistrito "${macroName}" no encontrado en el GeoJSON`);
 }
 
 function centerOnDistrito(distritoNombre) {
@@ -290,13 +298,11 @@ function centerOnDistrito(distritoNombre) {
     });
     if (foundLayer) {
         map.fitBounds(foundLayer.getBounds());
-        foundLayer.setStyle({ color: '#3b82f6', weight: 4, fillOpacity: 0.3 }); // AZUL
+        foundLayer.setStyle({ color: '#3b82f6', weight: 4, fillOpacity: 0.3 });
         foundLayer.bringToFront();
         foundLayer.openPopup();
         if (macroLayer) macroLayer.eachLayer(l => l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 }));
-    } else {
-        console.warn(`Distrito ${distritoNombre} no encontrado en el mapa`);
-    }
+    } else console.warn(`Distrito ${distritoNombre} no encontrado en el mapa`);
 }
 
 window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
