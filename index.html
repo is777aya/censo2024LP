@@ -4,25 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Dashboard Estratégico - GMLP</title>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="dashboard-container">
-    <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <i class="fa-solid fa-chart-pie logo-icon"></i>
-            <h2>Censo GMLP</h2>
-        </div>
+        <div class="sidebar-header"><i class="fa-solid fa-chart-pie logo-icon"></i><h2>Censo GMLP</h2></div>
         <div class="filters-section">
             <h3><i class="fa-solid fa-filter"></i> Filtros</h3>
             <div class="filter-group">
@@ -34,116 +25,82 @@
                 <select id="distrito-select"><option value="ALL">Todos los Distritos</option></select>
             </div>
         </div>
-        <div class="sidebar-footer">
-            <p>Fuente: INE-2024, i.gutierrez219</p>
-        </div>
+        <div class="sidebar-footer"><p>Fuente: INE-2024, i.gutierrez219</p></div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
         <header class="top-header">
             <h1>Indicadores Estratégicos</h1>
             <p class="subtitle" id="current-selection-label">Visión General: Todos los Macrodistritos</p>
         </header>
 
-        <!-- KPIs Grid con tooltips explicativos -->
-        <section class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-icon population"><i class="fa-solid fa-users"></i></div>
-                <div class="kpi-info">
-                    <h3>Demografía 
-                        <i class="fa-regular fa-circle-question kpi-help" title="Población total censada (suma de 'Personas'). Representa el número de habitantes."></i>
-                    </h3>
-                    <p class="kpi-value" id="kpi-demografia">0</p>
+        <!-- Nueva fila: mapa + KPIs verticales -->
+        <div class="map-kpi-row">
+            <!-- Mapa -->
+            <div class="map-container">
+                <div class="map-card">
+                    <h3><i class="fa-solid fa-map"></i> Mapa de Macrodistritos y Distritos</h3>
+                    <div id="map"></div>
+                    <p class="map-note">Selecciona un macrodistrito en el panel lateral para centrar</p>
                 </div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-icon health"><i class="fa-solid fa-heart-pulse"></i></div>
-                <div class="kpi-info">
-                    <h3>Salud 
-                        <i class="fa-regular fa-circle-question kpi-help" title="Suma de todos los indicadores de salud (afiliación, atención, etc.). Una persona puede aparecer en varias categorías, por lo que el total es mayor a la población."></i>
-                    </h3>
-                    <p class="kpi-value" id="kpi-salud">0</p>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon education"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div class="kpi-info">
-                    <h3>Educación 
-                        <i class="fa-regular fa-circle-question kpi-help" title="Suma de niveles educativos (ninguno, primaria, secundaria, superior). Cada persona se cuenta una sola vez en el nivel alcanzado."></i>
-                    </h3>
-                    <p class="kpi-value" id="kpi-educacion">0</p>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon economy"><i class="fa-solid fa-briefcase"></i></div>
-                <div class="kpi-info">
-                    <h3>Caract. Económicas 
-                        <i class="fa-regular fa-circle-question kpi-help" title="Suma de ocupación (empleado, cuenta propia, otros) y actividad económica (agricultura, comercio, etc.). Una persona puede estar en dos categorías."></i>
-                    </h3>
-                    <p class="kpi-value" id="kpi-economia">0</p>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon housing"><i class="fa-solid fa-house"></i></div>
-                <div class="kpi-info">
-                    <h3>Vivienda 
-                        <i class="fa-regular fa-circle-question kpi-help" title="Total de viviendas censadas (suma de 'Viviendas')."></i>
-                    </h3>
-                    <p class="kpi-value" id="kpi-vivienda">0</p>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon services"><i class="fa-solid fa-faucet-drip"></i></div>
-                <div class="kpi-info">
-                    <h3>Tenencia Servicios 
-                        <i class="fa-regular fa-circle-question kpi-help" title="Suma de indicadores de servicios básicos (agua, energía, desagüe, combustible, basura, TICs). Una vivienda puede contar con múltiples servicios."></i>
-                    </h3>
-                    <p class="kpi-value" id="kpi-servicios">0</p>
-                </div>
-            </div>
-        </section>
 
-        <!-- Mapa interactivo -->
-        <section class="map-card">
-            <h3><i class="fa-solid fa-map"></i> Mapa de Macrodistritos y Distritos</h3>
-            <div id="map"></div>
-            <p class="map-note">Selecciona un macrodistrito en el panel lateral para centrar el mapa</p>
-        </section>
+            <!-- KPIs verticales -->
+            <div class="kpi-vertical-container">
+                <div class="kpi-grid-vertical">
+                    <div class="kpi-card">
+                        <div class="kpi-icon population"><i class="fa-solid fa-users"></i></div>
+                        <div class="kpi-info">
+                            <h3>Demografía <i class="fa-regular fa-circle-question kpi-help" title="Población total (Personas)."></i></h3>
+                            <p class="kpi-value" id="kpi-demografia">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon health"><i class="fa-solid fa-heart-pulse"></i></div>
+                        <div class="kpi-info">
+                            <h3>Salud <i class="fa-regular fa-circle-question kpi-help" title="Suma de indicadores de salud (afiliación, atención). Una persona puede aparecer varias veces."></i></h3>
+                            <p class="kpi-value" id="kpi-salud">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon education"><i class="fa-solid fa-graduation-cap"></i></div>
+                        <div class="kpi-info">
+                            <h3>Educación <i class="fa-regular fa-circle-question kpi-help" title="Suma de niveles educativos (cada persona se cuenta una vez)."></i></h3>
+                            <p class="kpi-value" id="kpi-educacion">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon economy"><i class="fa-solid fa-briefcase"></i></div>
+                        <div class="kpi-info">
+                            <h3>Caract. Económicas <i class="fa-regular fa-circle-question kpi-help" title="Suma de ocupación y actividad. Una persona puede estar en dos categorías."></i></h3>
+                            <p class="kpi-value" id="kpi-economia">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon housing"><i class="fa-solid fa-house"></i></div>
+                        <div class="kpi-info">
+                            <h3>Vivienda <i class="fa-regular fa-circle-question kpi-help" title="Total de viviendas censadas."></i></h3>
+                            <p class="kpi-value" id="kpi-vivienda">0</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon services"><i class="fa-solid fa-faucet-drip"></i></div>
+                        <div class="kpi-info">
+                            <h3>Tenencia Servicios <i class="fa-regular fa-circle-question kpi-help" title="Suma de servicios básicos (agua, energía, etc.). Una vivienda puede tener varios."></i></h3>
+                            <p class="kpi-value" id="kpi-servicios">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <!-- Gráficos -->
+        <!-- Gráficos (sin cambios) -->
         <section class="charts-grid">
-            <!-- Edades -->
-            <div class="chart-card large-chart">
-                <h3>Distribución por Edades</h3>
-                <div class="canvas-container"><canvas id="ageChart"></canvas></div>
-            </div>
-
-            <!-- Nivel educativo -->
-            <div class="chart-card">
-                <h3>Nivel Educativo</h3>
-                <div class="canvas-container"><canvas id="eduChart"></canvas></div>
-            </div>
-
-            <!-- Servicios básicos -->
-            <div class="chart-card">
-                <h3>Servicios Básicos</h3>
-                <div class="canvas-container"><canvas id="servicesChart"></canvas></div>
-            </div>
-
-            <!-- Salud: cobertura de afiliación -->
-            <div class="chart-card large-chart">
-                <h3>Salud: Cobertura de Afiliación</h3>
-                <div class="canvas-container"><canvas id="healthChart"></canvas></div>
-            </div>
-
-            <!-- Actividad económica (nuevo) -->
-            <div class="chart-card large-chart">
-                <h3>Población ocupada por rama de actividad económica</h3>
-                <div class="canvas-container"><canvas id="activityChart"></canvas></div>
-            </div>
-
-            <!-- Explorador de variables -->
+            <div class="chart-card large-chart"><h3>Distribución por Edades</h3><div class="canvas-container"><canvas id="ageChart"></canvas></div></div>
+            <div class="chart-card"><h3>Nivel Educativo</h3><div class="canvas-container"><canvas id="eduChart"></canvas></div></div>
+            <div class="chart-card"><h3>Servicios Básicos</h3><div class="canvas-container"><canvas id="servicesChart"></canvas></div></div>
+            <div class="chart-card large-chart"><h3>Salud: Cobertura de Afiliación</h3><div class="canvas-container"><canvas id="healthChart"></canvas></div></div>
+            <div class="chart-card large-chart"><h3>Población ocupada por rama de actividad económica</h3><div class="canvas-container"><canvas id="activityChart"></canvas></div></div>
             <div class="chart-card large-chart">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3>Explorador de Variables</h3>
@@ -154,7 +111,6 @@
         </section>
     </main>
 </div>
-
 <script src="dashboard_data.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
