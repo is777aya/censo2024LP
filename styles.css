@@ -87,3 +87,15 @@ body { background: var(--bg-color); color: var(--text-main); overflow-x: hidden;
     .filter-group { flex:1; min-width:150px; } 
     #map { height: 350px; }
 }
+
+/* Tooltip (popup) explicativo para KPIs */
+.kpi-help {
+    font-size: 14px;
+    margin-left: 8px;
+    color: var(--text-muted);
+    cursor: help;
+    transition: color 0.2s;
+}
+.kpi-help:hover {
+    color: var(--accent-color);
+}
