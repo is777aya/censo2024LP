@@ -62,21 +62,12 @@ function setupEventListeners() {
         }
         updateDashboard(macro, 'ALL');
         highlightMacroOnMap(macro);
-        // Limpiar resaltados de distritos
-        if (distritoLayer) {
-            distritoLayer.eachLayer(l => {
-                l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' });
-                l.closePopup();
-            });
-        }
     });
     distritoSelect.addEventListener('change', e => {
         const macro = macroSelect.value;
         const distrito = e.target.value;
         updateDashboard(macro, distrito);
-        if (distrito !== 'ALL' && distritoLayer) {
-            centerOnDistrito(distrito);
-        }
+        if (distrito !== 'ALL' && distritoLayer) centerOnDistrito(distrito);
     });
     variableSelect.addEventListener('change', () => updateExplorerChart(macroSelect.value, distritoSelect.value));
 }
@@ -181,17 +172,17 @@ function updateExplorerChart(macro, distrito) {
     explorerChartInstance = new Chart(document.getElementById('explorerChart'), { type: 'bar', data: { labels, datasets: [{ label: selected, data: values, backgroundColor: 'rgba(139,92,246,0.6)', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
 }
 
-// ---------- MAPA ----------
+// ---------- MAPA INTERACTIVO ----------
 function initMap() {
     map = L.map('map').setView([-16.5, -68.15], 11);
-    // Fondo OSM estándar (en lugar de CartoDB oscuro)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
+    // Fondo satelital (ESRI)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxZoom: 18,
         minZoom: 10
     }).addTo(map);
 
-    // Macrodistritos
+    // Cargar macrodistritos
     fetch('macrodistritos.geojson')
         .then(response => response.json())
         .then(data => {
@@ -207,12 +198,13 @@ function initMap() {
                 onEachFeature: (feature, layer) => {
                     const nombre = feature.properties[macroNameProperty] || 'Macrodistrito';
                     layer.bindPopup(`<strong>${nombre}</strong>`);
+                    layer.bindTooltip(nombre, { permanent: true, direction: 'center', className: 'macrodistrito-label' });
                 }
             }).addTo(map);
         })
         .catch(err => console.error('Error cargando macrodistritos:', err));
 
-    // Distritos
+    // Cargar distritos
     fetch('distritos.geojson')
         .then(response => response.json())
         .then(data => {
@@ -228,16 +220,20 @@ function initMap() {
                     let nombre = feature.properties[distritoNameProperty] || 'Distrito';
                     nombre = nombre.toString();
                     layer.bindPopup(`<strong>Distrito ${nombre}</strong>`);
+                    layer.bindTooltip(`Distrito ${nombre}`, { permanent: true, direction: 'center', className: 'distrito-label' });
                     layer.on('click', () => {
                         const macroActual = macroSelect.value;
                         if (macroActual !== 'ALL') {
-                            // Resetear estilos de todos los distritos
+                            // Resetear estilos de todos los distritos y macrodistritos
                             distritoLayer.eachLayer(l => {
                                 l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' });
                                 l.closePopup();
                             });
-                            // Resaltar este distrito
-                            layer.setStyle({ color: '#f59e0b', weight: 3, fillOpacity: 0.3 });
+                            if (macroLayer) {
+                                macroLayer.eachLayer(l => l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 }));
+                            }
+                            // Resaltar este distrito en azul
+                            layer.setStyle({ color: '#3b82f6', weight: 4, fillOpacity: 0.3 });
                             layer.bringToFront();
                             layer.openPopup();
                             // Actualizar selector de distrito
@@ -261,6 +257,7 @@ function highlightMacroOnMap(macroName) {
     if (macroName === 'ALL') {
         map.setView([-16.5, -68.15], 11);
         macroLayer.eachLayer(l => l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 }));
+        if (distritoLayer) distritoLayer.eachLayer(l => l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' }));
         return;
     }
     const feature = currentMacroGeoJSON.features.find(f => f.properties[macroNameProperty] && f.properties[macroNameProperty].toString() === macroName);
@@ -270,12 +267,13 @@ function highlightMacroOnMap(macroName) {
         macroLayer.eachLayer(layer => {
             const layerName = layer.feature.properties[macroNameProperty]?.toString();
             if (layerName === macroName) {
-                layer.setStyle({ color: '#f59e0b', weight: 3, fillOpacity: 0.4 });
+                layer.setStyle({ color: '#ef4444', weight: 4, fillOpacity: 0.4 }); // ROJO
                 layer.bringToFront();
             } else {
                 layer.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 });
             }
         });
+        if (distritoLayer) distritoLayer.eachLayer(l => l.setStyle({ color: '#10b981', weight: 1, fillOpacity: 0.1, dashArray: '3' }));
     } else {
         console.warn(`Macrodistrito "${macroName}" no encontrado en el GeoJSON`);
     }
@@ -292,9 +290,10 @@ function centerOnDistrito(distritoNombre) {
     });
     if (foundLayer) {
         map.fitBounds(foundLayer.getBounds());
-        foundLayer.setStyle({ color: '#f59e0b', weight: 3, fillOpacity: 0.3 });
+        foundLayer.setStyle({ color: '#3b82f6', weight: 4, fillOpacity: 0.3 }); // AZUL
         foundLayer.bringToFront();
         foundLayer.openPopup();
+        if (macroLayer) macroLayer.eachLayer(l => l.setStyle({ color: '#3b82f6', weight: 2, fillOpacity: 0.2 }));
     } else {
         console.warn(`Distrito ${distritoNombre} no encontrado en el mapa`);
     }
