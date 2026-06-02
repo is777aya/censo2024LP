@@ -205,7 +205,7 @@ function updateExplorerChart(macro, distrito) {
 
 // ---------- MAPA INTERACTIVO ----------
 function initMap() {
-    map = L.map('map').setView([-16.5, -68.15], 11);
+    map = L.map('map').setView([-16.5106, -68.0701], 11);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
         maxZoom: 18, minZoom: 10
