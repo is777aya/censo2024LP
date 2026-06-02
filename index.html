@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dashboard Estratégico - GMLP</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-chart-pie logo-icon"></i>
+            <h2>Censo GMLP</h2>
+        </div>
+        <div class="filters-section">
+            <h3><i class="fa-solid fa-filter"></i> Filtros</h3>
+            <div class="filter-group">
+                <label for="macro-select">Macrodistrito</label>
+                <select id="macro-select"><option value="ALL">Todos los Macrodistritos</option></select>
+            </div>
+            <div class="filter-group">
+                <label for="distrito-select">Distrito</label>
+                <select id="distrito-select"><option value="ALL">Todos los Distritos</option></select>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <p>Dashboard Estratégico &copy; 2026</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-header">
+            <h1>Indicadores Estratégicos</h1>
+            <p class="subtitle" id="current-selection-label">Visión General: Todos los Macrodistritos</p>
+        </header>
+
+        <!-- KPIs Grid -->
+        <section class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-icon population"><i class="fa-solid fa-users"></i></div><div class="kpi-info"><h3>Demografía</h3><p class="kpi-value" id="kpi-demografia">0</p></div></div>
+            <div class="kpi-card"><div class="kpi-icon health"><i class="fa-solid fa-heart-pulse"></i></div><div class="kpi-info"><h3>Salud</h3><p class="kpi-value" id="kpi-salud">0</p></div></div>
+            <div class="kpi-card"><div class="kpi-icon education"><i class="fa-solid fa-graduation-cap"></i></div><div class="kpi-info"><h3>Educación</h3><p class="kpi-value" id="kpi-educacion">0</p></div></div>
+            <div class="kpi-card"><div class="kpi-icon economy"><i class="fa-solid fa-briefcase"></i></div><div class="kpi-info"><h3>Caract. Económicas</h3><p class="kpi-value" id="kpi-economia">0</p></div></div>
+            <div class="kpi-card"><div class="kpi-icon housing"><i class="fa-solid fa-house"></i></div><div class="kpi-info"><h3>Vivienda</h3><p class="kpi-value" id="kpi-vivienda">0</p></div></div>
+            <div class="kpi-card"><div class="kpi-icon services"><i class="fa-solid fa-faucet-drip"></i></div><div class="kpi-info"><h3>Tenencia Servicios</h3><p class="kpi-value" id="kpi-servicios">0</p></div></div>
+        </section>
+
+        <!-- Mapa interactivo -->
+        <section class="map-card">
+            <h3><i class="fa-solid fa-map"></i> Mapa de Macrodistritos y Distritos</h3>
+            <div id="map"></div>
+            <p class="map-note">📍 Haz clic en un distrito para filtrar los datos | Selecciona un macrodistrito en el panel lateral para centrar el mapa</p>
+        </section>
+
+        <!-- Gráficos -->
+        <section class="charts-grid">
+            <div class="chart-card large-chart"><h3>Distribución por Edades</h3><div class="canvas-container"><canvas id="ageChart"></canvas></div></div>
+            <div class="chart-card"><h3>Nivel Educativo</h3><div class="canvas-container"><canvas id="eduChart"></canvas></div></div>
+            <div class="chart-card"><h3>Servicios Básicos</h3><div class="canvas-container"><canvas id="servicesChart"></canvas></div></div>
+            <div class="chart-card large-chart"><h3>Salud: Cobertura de Afiliación</h3><div class="canvas-container"><canvas id="healthChart"></canvas></div></div>
+            <div class="chart-card large-chart">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Explorador de Variables</h3>
+                    <select id="variable-select" style="padding: 8px; border-radius: 6px; background-color: rgba(15, 23, 42, 0.5); color: #f8fafc; border: 1px solid var(--border-color);"></select>
+                </div>
+                <div class="canvas-container"><canvas id="explorerChart"></canvas></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Scripts -->
+<script src="dashboard_data.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
