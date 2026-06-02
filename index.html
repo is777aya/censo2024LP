@@ -35,7 +35,7 @@
             </div>
         </div>
         <div class="sidebar-footer">
-            <p>Fuente: INE-2024, i.gutierrez219</p>
+            <p>Dashboard Estratégico &copy; 2026</p>
         </div>
     </aside>
 
@@ -108,22 +108,42 @@
         <section class="map-card">
             <h3><i class="fa-solid fa-map"></i> Mapa de Macrodistritos y Distritos</h3>
             <div id="map"></div>
-            <p class="map-note">Selecciona un macrodistrito en el panel lateral para centrar el mapa</p>
+            <p class="map-note">📍 Haz clic en un distrito para filtrar los datos | Selecciona un macrodistrito en el panel lateral para centrar el mapa</p>
         </section>
 
         <!-- Gráficos -->
         <section class="charts-grid">
-            <div class="chart-card large-chart"><h3>Distribución por Edades</h3><div class="canvas-container"><canvas id="ageChart"></canvas></div></div>
-            <div class="chart-card"><h3>Nivel Educativo</h3><div class="canvas-container"><canvas id="eduChart"></canvas></div></div>
-            <div class="chart-card"><h3>Servicios Básicos</h3><div class="canvas-container"><canvas id="servicesChart"></canvas></div></div>
-            <div class="chart-card large-chart"><h3>Salud: Cobertura de Afiliación</h3><div class="canvas-container"><canvas id="healthChart"></canvas></div></div>
-            <!-- Actividad económica -->
+            <!-- Edades -->
             <div class="chart-card large-chart">
-            <h3>Población ocupada por rama de actividad económica</h3>
-                <div class="canvas-container">
-                <canvas id="activityChart"></canvas>
-                </div>
+                <h3>Distribución por Edades</h3>
+                <div class="canvas-container"><canvas id="ageChart"></canvas></div>
             </div>
+
+            <!-- Nivel educativo -->
+            <div class="chart-card">
+                <h3>Nivel Educativo</h3>
+                <div class="canvas-container"><canvas id="eduChart"></canvas></div>
+            </div>
+
+            <!-- Servicios básicos -->
+            <div class="chart-card">
+                <h3>Servicios Básicos</h3>
+                <div class="canvas-container"><canvas id="servicesChart"></canvas></div>
+            </div>
+
+            <!-- Salud: cobertura de afiliación -->
+            <div class="chart-card large-chart">
+                <h3>Salud: Cobertura de Afiliación</h3>
+                <div class="canvas-container"><canvas id="healthChart"></canvas></div>
+            </div>
+
+            <!-- Actividad económica (nuevo) -->
+            <div class="chart-card large-chart">
+                <h3>Población ocupada por rama de actividad económica</h3>
+                <div class="canvas-container"><canvas id="activityChart"></canvas></div>
+            </div>
+
+            <!-- Explorador de variables -->
             <div class="chart-card large-chart">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3>Explorador de Variables</h3>
