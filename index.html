@@ -48,7 +48,6 @@
 
         <!-- KPIs Grid con tooltips explicativos -->
         <section class="kpi-grid">
-            <!-- 1. Demografía -->
             <div class="kpi-card">
                 <div class="kpi-icon population"><i class="fa-solid fa-users"></i></div>
                 <div class="kpi-info">
@@ -58,7 +57,6 @@
                     <p class="kpi-value" id="kpi-demografia">0</p>
                 </div>
             </div>
-            <!-- 2. Salud -->
             <div class="kpi-card">
                 <div class="kpi-icon health"><i class="fa-solid fa-heart-pulse"></i></div>
                 <div class="kpi-info">
@@ -68,7 +66,6 @@
                     <p class="kpi-value" id="kpi-salud">0</p>
                 </div>
             </div>
-            <!-- 3. Educación -->
             <div class="kpi-card">
                 <div class="kpi-icon education"><i class="fa-solid fa-graduation-cap"></i></div>
                 <div class="kpi-info">
@@ -78,7 +75,6 @@
                     <p class="kpi-value" id="kpi-educacion">0</p>
                 </div>
             </div>
-            <!-- 4. Características Económicas -->
             <div class="kpi-card">
                 <div class="kpi-icon economy"><i class="fa-solid fa-briefcase"></i></div>
                 <div class="kpi-info">
@@ -88,7 +84,6 @@
                     <p class="kpi-value" id="kpi-economia">0</p>
                 </div>
             </div>
-            <!-- 5. Vivienda -->
             <div class="kpi-card">
                 <div class="kpi-icon housing"><i class="fa-solid fa-house"></i></div>
                 <div class="kpi-info">
@@ -98,7 +93,6 @@
                     <p class="kpi-value" id="kpi-vivienda">0</p>
                 </div>
             </div>
-            <!-- 6. Tenencia de Servicios -->
             <div class="kpi-card">
                 <div class="kpi-icon services"><i class="fa-solid fa-faucet-drip"></i></div>
                 <div class="kpi-info">
@@ -110,13 +104,14 @@
             </div>
         </section>
 
-        <!-- Mapa y gráficos (resto igual) -->
+        <!-- Mapa interactivo -->
         <section class="map-card">
             <h3><i class="fa-solid fa-map"></i> Mapa de Macrodistritos y Distritos</h3>
             <div id="map"></div>
-            <p class="map-note">📍 Haz clic en un distrito para filtrar los datos | Selecciona un macrodistrito en el panel lateral para centrar el mapa</p>
+            <p class="map-note">Selecciona un macrodistrito en el panel lateral para centrar el mapa</p>
         </section>
 
+        <!-- Gráficos -->
         <section class="charts-grid">
             <div class="chart-card large-chart"><h3>Distribución por Edades</h3><div class="canvas-container"><canvas id="ageChart"></canvas></div></div>
             <div class="chart-card"><h3>Nivel Educativo</h3><div class="canvas-container"><canvas id="eduChart"></canvas></div></div>
