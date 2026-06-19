@@ -1,118 +1,442 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Dashboard Estratégico - GMLP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Observatorio Urbano La Paz 2024</title>
+
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: #1e293b;
+            padding: 16px 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border: 1px solid #334155;
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .filtros {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .header .filtros label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+        .header .filtros select {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            min-width: 140px;
+        }
+        .header .filtros select:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+        #current-selection-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            background: #0f172a;
+            padding: 4px 16px;
+            border-radius: 20px;
+            border: 1px solid #334155;
+        }
+
+        /* KPIs */
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: #1e293b;
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .kpi-card .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+        .kpi-card .kpi-subtitulo {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 6px;
+            font-style: italic;
+            line-height: 1.3;
+            max-width: 100%;
+        }
+
+        /* MAPA Y CONTROLES */
+        .map-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+            margin-bottom: 24px;
+            position: relative; /* necesario para el posicionamiento absoluto del crédito */
+        }
+        #map {
+            height: 450px;
+            border-radius: 16px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            position: relative;
+        }
+
+        /* Crédito superpuesto en el mapa (esquina inferior derecha) */
+        .map-credito {
+            position: absolute;
+            bottom: 12px;
+            right: 16px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(2px);
+            padding: 4px 14px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+        .map-credito a {
+            color: #60a5fa;
+            pointer-events: auto;
+            text-decoration: none;
+        }
+        .map-credito a:hover {
+            text-decoration: underline;
+        }
+
+        .map-controls {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .map-controls h4 {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+        }
+        .map-controls label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .map-controls input[type="range"] {
+            width: 100%;
+            accent-color: #3b82f6;
+            background: #0f172a;
+        }
+        .map-controls select {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+
+        /* GRÁFICOS */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .chart-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #334155;
+        }
+        .chart-card h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .chart-container {
+            position: relative;
+            height: 220px;
+        }
+        .chart-container.tall {
+            height: 260px;
+        }
+
+        /* EXPLORADOR */
+        .explorer-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .explorer-controls label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .explorer-controls select {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.85rem;
+            min-width: 140px;
+        }
+
+        /* ETIQUETAS DEL MAPA */
+        .etiqueta-macrodistrito,
+        .etiqueta-distrito,
+        .etiqueta-otb {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            padding: 2px 8px !important;
+            border-radius: 4px !important;
+            font-weight: 600 !important;
+            color: #e2e8f0 !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important;
+            pointer-events: none !important;
+            white-space: nowrap !important;
+        }
+        .etiqueta-macrodistrito {
+            font-size: 13px !important;
+            border: 1px solid #3b82f6 !important;
+        }
+        .etiqueta-distrito {
+            font-size: 12px !important;
+            border: 1px solid #10b981 !important;
+        }
+        .etiqueta-otb {
+            font-size: 10px !important;
+            border: 1px solid #fbbf24 !important;
+            background-color: rgba(0, 0, 0, 0.85) !important;
+        }
+        .etiqueta-recinto {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+            font-size: 10px !important;
+            color: #f1f5f9 !important;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            .map-wrapper { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .header { flex-direction: column; align-items: stretch; }
+            .header .filtros { flex-wrap: wrap; }
+            .kpis { grid-template-columns: 1fr 1fr; }
+            .map-credito {
+                font-size: 0.6rem;
+                padding: 3px 10px;
+                bottom: 8px;
+                right: 10px;
+                white-space: normal;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="dashboard-container">
-    <aside class="sidebar">
-        <div class="sidebar-header"><i class="fa-solid fa-chart-pie logo-icon"></i><h2>Censo GMLP</h2></div>
-        <div class="filters-section">
-            <h3><i class="fa-solid fa-filter"></i> Filtros</h3>
-            <div class="filter-group">
-                <label for="macro-select">Macrodistrito</label>
-                <select id="macro-select"><option value="ALL">Todos los Macrodistritos</option></select>
-            </div>
-            <div class="filter-group">
-                <label for="distrito-select">Distrito</label>
-                <select id="distrito-select"><option value="ALL">Todos los Distritos</option></select>
+
+<div class="dashboard">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div>
+        <h1>🏙️ La Paz en Datos</h1>
+        <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 2px;">
+            Inteligencia territorial para la planificación municipal
+        </p>
+    </div>
+        <div class="filtros">
+            <label>Macrodistrito</label>
+            <select id="macro-select">
+                <option value="ALL">Todos</option>
+            </select>
+            <label>Distrito</label>
+            <select id="distrito-select">
+                <option value="ALL">Todos</option>
+            </select>
+            <span id="current-selection-label">Visión General: Todos los Macrodistritos</span>
+        </div>
+    </header>
+
+    <!-- KPIs CON SUBTÍTULOS -->
+    <section class="kpis">
+        <div class="kpi-card">
+            <div class="kpi-label">👥 Demografía</div>
+            <div class="kpi-value" id="kpi-demografia">0</div>
+            <div class="kpi-subtitulo">Población total (Personas)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">🏥 Salud</div>
+            <div class="kpi-value" id="kpi-salud">0</div>
+            <div class="kpi-subtitulo">Suma de afiliaciones y atenciones. Una persona puede aparecer varias veces</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">📚 Educación</div>
+            <div class="kpi-value" id="kpi-educacion">0</div>
+            <div class="kpi-subtitulo">Suma de niveles educativos. Cada persona se cuenta una vez</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">💰 Caract. Económicas</div>
+            <div class="kpi-value" id="kpi-economia">0</div>
+            <div class="kpi-subtitulo">Suma de ocupación y actividad. Una persona puede estar en dos categorías</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">🏠 Vivienda</div>
+            <div class="kpi-value" id="kpi-vivienda">0</div>
+            <div class="kpi-subtitulo">Total de viviendas censadas</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">🔌 Servicios</div>
+            <div class="kpi-value" id="kpi-servicios">0</div>
+            <div class="kpi-subtitulo">Suma de servicios básicos (agua, energía, etc.). Una vivienda puede tener varios</div>
+        </div>
+    </section>
+
+    <!-- MAPA + CONTROLES (con crédito superpuesto) -->
+    <div class="map-wrapper">
+        <div id="map">
+            <!-- Crédito superpuesto en el mapa (esquina inferior derecha) -->
+            <div class="map-credito">
+                Fuente: INE · Contacto: <a href="mailto:is777aya@gmail.com">is777aya@gmail.com</a>
             </div>
         </div>
-        <div class="sidebar-footer"><p>Fuente: INE-2024, contacto: is777aya@gmail.com</p></div>
-    </aside>
+        <div class="map-controls">
+            <h4>🗺️ Controles de capa</h4>
 
-    <main class="main-content">
-        <header class="top-header">
-            <h1>Portafolio de Indicadores del Censo 2024, por Macrodistrito-La Paz</h1>
-            <p class="subtitle" id="current-selection-label">Visión General: Todos los Macrodistritos</p>
-        </header>
-
-        <!-- Nueva fila: mapa + KPIs verticales -->
-        <div class="map-kpi-row">
-            <!-- Mapa -->
-            <div class="map-container">
-                <div class="map-card">
-                    <h3><i class="fa-solid fa-map"></i> Mapa de Macrodistritos y Distritos</h3>
-                    <div id="map"></div>
-                    <p class="map-note">Selecciona un macrodistrito en el panel lateral para centrar</p>
-                </div>
+            <label>
+                <input type="checkbox" id="toggle-otb" checked /> Mostrar OTB
+            </label>
+            <div>
+                <label>Opacidad OTB</label>
+                <input type="range" id="opacity-otb" min="0" max="100" value="50" />
+                <span id="opacity-otb-val">50%</span>
             </div>
 
-            <!-- KPIs verticales -->
-            <div class="kpi-vertical-container">
-                <div class="kpi-grid-vertical">
-                    <div class="kpi-card">
-                        <div class="kpi-icon population"><i class="fa-solid fa-users"></i></div>
-                        <div class="kpi-info">
-                            <h3>Demografía <i class="fa-regular fa-circle-question kpi-help" title="Población total (Personas)."></i></h3>
-                            <p class="kpi-value" id="kpi-demografia">0</p>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon health"><i class="fa-solid fa-heart-pulse"></i></div>
-                        <div class="kpi-info">
-                            <h3>Salud <i class="fa-regular fa-circle-question kpi-help" title="Suma de indicadores de salud (afiliación, atención). Una persona puede aparecer varias veces."></i></h3>
-                            <p class="kpi-value" id="kpi-salud">0</p>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon education"><i class="fa-solid fa-graduation-cap"></i></div>
-                        <div class="kpi-info">
-                            <h3>Educación <i class="fa-regular fa-circle-question kpi-help" title="Suma de niveles educativos (cada persona se cuenta una vez)."></i></h3>
-                            <p class="kpi-value" id="kpi-educacion">0</p>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon economy"><i class="fa-solid fa-briefcase"></i></div>
-                        <div class="kpi-info">
-                            <h3>Caract. Económicas <i class="fa-regular fa-circle-question kpi-help" title="Suma de ocupación y actividad. Una persona puede estar en dos categorías."></i></h3>
-                            <p class="kpi-value" id="kpi-economia">0</p>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon housing"><i class="fa-solid fa-house"></i></div>
-                        <div class="kpi-info">
-                            <h3>Vivienda <i class="fa-regular fa-circle-question kpi-help" title="Total de viviendas censadas."></i></h3>
-                            <p class="kpi-value" id="kpi-vivienda">0</p>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon services"><i class="fa-solid fa-faucet-drip"></i></div>
-                        <div class="kpi-info">
-                            <h3>Tenencia Servicios <i class="fa-regular fa-circle-question kpi-help" title="Suma de servicios básicos (agua, energía, etc.). Una vivienda puede tener varios."></i></h3>
-                            <p class="kpi-value" id="kpi-servicios">0</p>
-                        </div>
-                    </div>
-                </div>
+            <label>
+                <input type="checkbox" id="toggle-recintos" /> Mostrar Recintos
+            </label>
+            <div>
+                <label>Opacidad Recintos</label>
+                <input type="range" id="opacity-recintos" min="0" max="100" value="80" />
+                <span id="opacity-recintos-val">80%</span>
+            </div>
+
+            <label>Filtrar por OTB</label>
+            <select id="otb-select"><option value="ALL">Todas</option></select>
+        </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Distribución por Edad</h3>
+            <div class="chart-container"><canvas id="ageChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <h3>Nivel Educativo</h3>
+            <div class="chart-container"><canvas id="eduChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Tenencia de Servicios</h3>
+            <div class="chart-container"><canvas id="servicesChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <h3>Cobertura de Salud</h3>
+            <div class="chart-container"><canvas id="healthChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Población ocupada por rama de actividad</h3>
+            <div class="chart-container tall"><canvas id="activityChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <h3>Explorador de Variables</h3>
+            <div class="explorer-controls">
+                <label>Grupo Temático</label>
+                <select id="grupo-select"></select>
+                <label>Variable</label>
+                <select id="variable-select"></select>
+            </div>
+            <div class="chart-container tall" style="margin-top: 8px;">
+                <canvas id="explorerChart"></canvas>
             </div>
         </div>
+    </div>
 
-        <!-- Gráficos (sin cambios) -->
-        <section class="charts-grid">
-            <div class="chart-card large-chart"><h3>Distribución por Edades</h3><div class="canvas-container"><canvas id="ageChart"></canvas></div></div>
-            <div class="chart-card"><h3>Nivel Educativo</h3><div class="canvas-container"><canvas id="eduChart"></canvas></div></div>
-            <div class="chart-card"><h3>Servicios Básicos</h3><div class="canvas-container"><canvas id="servicesChart"></canvas></div></div>
-            <div class="chart-card large-chart"><h3>Salud: Cobertura de Afiliación</h3><div class="canvas-container"><canvas id="healthChart"></canvas></div></div>
-            <div class="chart-card large-chart"><h3>Población ocupada por rama de actividad económica</h3><div class="canvas-container"><canvas id="activityChart"></canvas></div></div>
-            <div class="chart-card large-chart">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h3>Explorador de Variables</h3>
-                    <select id="variable-select" style="padding: 8px; border-radius: 6px; background-color: rgba(15, 23, 42, 0.5); color: #f8fafc; border: 1px solid var(--border-color);"></select>
-                </div>
-                <div class="canvas-container"><canvas id="explorerChart"></canvas></div>
-            </div>
-        </section>
-    </main>
 </div>
+
+<!-- ========== SCRIPTS ========== -->
 <script src="dashboard_data.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
+
 </body>
 </html>
