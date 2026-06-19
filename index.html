@@ -38,12 +38,22 @@
             margin-bottom: 24px;
             border: 1px solid #334155;
         }
-        .header h1 {
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .header-left h1 {
             font-size: 1.6rem;
             font-weight: 600;
             background: linear-gradient(135deg, #60a5fa, #a78bfa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        .header-left .subtitle {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin: 0;
         }
         .header .filtros {
             display: flex;
@@ -120,7 +130,7 @@
             grid-template-columns: 1fr 320px;
             gap: 20px;
             margin-bottom: 24px;
-            position: relative; /* necesario para el posicionamiento absoluto del crédito */
+            position: relative;
         }
         #map {
             height: 450px;
@@ -129,8 +139,6 @@
             background: #1e293b;
             position: relative;
         }
-
-        /* Crédito superpuesto en el mapa (esquina inferior derecha) */
         .map-credito {
             position: absolute;
             bottom: 12px;
@@ -222,7 +230,7 @@
             height: 260px;
         }
 
-        /* EXPLORADOR */
+        /* EXPLORADOR DE VARIABLES (ESTILOS) */
         .explorer-controls {
             display: flex;
             gap: 12px;
@@ -278,6 +286,21 @@
             color: #f1f5f9 !important;
         }
 
+        /* FOOTER */
+        .dashboard-footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid #334155;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #64748b;
+            letter-spacing: 0.3px;
+        }
+        .dashboard-footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 1024px) {
             .charts-grid { grid-template-columns: 1fr; }
@@ -303,12 +326,10 @@
 
     <!-- HEADER -->
     <header class="header">
-        <div>
-        <h1>🏙️ La Paz en Datos</h1>
-        <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 2px;">
-            Inteligencia territorial para la planificación municipal
-        </p>
-    </div>
+        <div class="header-left">
+            <h1>🏙️ La Paz en Datos</h1>
+            <p class="subtitle">Inteligencia territorial para la planificación municipal</p>
+        </div>
         <div class="filtros">
             <label>Macrodistrito</label>
             <select id="macro-select">
@@ -322,7 +343,7 @@
         </div>
     </header>
 
-    <!-- KPIs CON SUBTÍTULOS -->
+    <!-- KPIS CON SUBTÍTULOS -->
     <section class="kpis">
         <div class="kpi-card">
             <div class="kpi-label">👥 Demografía</div>
@@ -356,17 +377,15 @@
         </div>
     </section>
 
-    <!-- MAPA + CONTROLES (con crédito superpuesto) -->
+    <!-- MAPA + CONTROLES -->
     <div class="map-wrapper">
         <div id="map">
-            <!-- Crédito superpuesto en el mapa (esquina inferior derecha) -->
             <div class="map-credito">
                 Fuente: INE · Contacto: <a href="mailto:is777aya@gmail.com">is777aya@gmail.com</a>
             </div>
         </div>
         <div class="map-controls">
             <h4>🗺️ Controles de capa</h4>
-
             <label>
                 <input type="checkbox" id="toggle-otb" checked /> Mostrar OTB
             </label>
@@ -375,7 +394,6 @@
                 <input type="range" id="opacity-otb" min="0" max="100" value="50" />
                 <span id="opacity-otb-val">50%</span>
             </div>
-
             <label>
                 <input type="checkbox" id="toggle-recintos" /> Mostrar Recintos
             </label>
@@ -384,13 +402,13 @@
                 <input type="range" id="opacity-recintos" min="0" max="100" value="80" />
                 <span id="opacity-recintos-val">80%</span>
             </div>
-
             <label>Filtrar por OTB</label>
             <select id="otb-select"><option value="ALL">Todas</option></select>
         </div>
     </div>
 
     <!-- GRÁFICOS -->
+    <!-- Primera fila -->
     <div class="charts-grid">
         <div class="chart-card">
             <h3>Distribución por Edad</h3>
@@ -402,6 +420,7 @@
         </div>
     </div>
 
+    <!-- Segunda fila -->
     <div class="charts-grid">
         <div class="chart-card">
             <h3>Tenencia de Servicios</h3>
@@ -413,6 +432,7 @@
         </div>
     </div>
 
+    <!-- Tercera fila (incluye el Explorador de Variables) -->
     <div class="charts-grid">
         <div class="chart-card">
             <h3>Población ocupada por rama de actividad</h3>
@@ -421,9 +441,9 @@
         <div class="chart-card">
             <h3>Explorador de Variables</h3>
             <div class="explorer-controls">
-                <label>Grupo Temático</label>
+                <label for="grupo-select">Grupo Temático</label>
                 <select id="grupo-select"></select>
-                <label>Variable</label>
+                <label for="variable-select">Variable</label>
                 <select id="variable-select"></select>
             </div>
             <div class="chart-container tall" style="margin-top: 8px;">
@@ -435,7 +455,9 @@
 </div>
 
 <!-- ========== SCRIPTS ========== -->
+<!-- 1. Datos (dashboard_data.js) -->
 <script src="dashboard_data.js"></script>
+<!-- 2. Lógica principal (app.js) -->
 <script src="app.js"></script>
 
 </body>
