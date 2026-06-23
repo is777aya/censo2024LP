@@ -15,6 +15,12 @@ let recintosData = null;
 let otbVisible = true;
 let recintosVisible = false;
 
+// Nueva capa de votación OTB
+let otbsVotacionData = null;
+let otbsVotacionLayer = null;
+let otbsVotacionVisible = true;
+let medianVotoOTB = 0;
+
 // Propiedades de campos
 const otbNameProp = 'nom_otb';
 const recintoNameProp = 'recinto_nombre';
@@ -199,7 +205,7 @@ const gruposVariables = {
 // Variables para control de etiquetas y selecciones
 let seleccionMacro = 'ALL';
 let seleccionDistrito = 'ALL';
-let otbSeleccionada = null;  // Almacena el nombre normalizado de la OTB resaltada
+let otbSeleccionada = null;
 
 // ---------- FUNCIÓN DE NORMALIZACIÓN ----------
 function normalize(str) {
@@ -216,7 +222,7 @@ function toNumber(value) {
     return isNaN(num) ? value : num;
 }
 
-// ---------- CENTRAR EN GEOMETRÍA (CORREGIDO) ----------
+// ---------- CENTRAR EN GEOMETRÍA ----------
 function centerOnGeometry(geometry) {
     if (!geometry) return;
 
@@ -247,7 +253,7 @@ function centerOnGeometry(geometry) {
     }
 }
 
-// ---------- COLOR DE RECINTOS (SIN CAMBIOS) ----------
+// ---------- COLOR DE RECINTOS ----------
 function getQuantileColor(pct) {
     if (pct === undefined || pct === null) return '#cccccc';
     if (medianVoto === 0) return '#800080';
@@ -265,6 +271,17 @@ function getQuantileRadius(pct) {
         return 2;
     } else {
         return 4;
+    }
+}
+
+// ---------- COLOR PARA OTB VOTACIÓN ----------
+function getQuantileColorOTB(pct) {
+    if (pct === undefined || pct === null) return '#cccccc';
+    if (medianVotoOTB === 0) return '#800080';
+    if (pct <= medianVotoOTB) {
+        return '#FFD700';
+    } else {
+        return '#800080';
     }
 }
 
@@ -346,6 +363,7 @@ function initDashboard() {
     initMap();
     loadRecintos();
     loadOTBs();
+    loadOTBsVotacion();
     setupLayerControls();
 }
 
@@ -393,7 +411,7 @@ function setupEventListeners() {
         const macro = e.target.value;
         seleccionMacro = macro;
         seleccionDistrito = 'ALL';
-        otbSeleccionada = null;  // Resetear resaltado OTB
+        otbSeleccionada = null;
         distritoSelect.innerHTML = '<option value="ALL">Todos los Distritos</option>';
         if (macro !== 'ALL') {
             dashboardData.distritos.filter(d => d.macro_ante === macro).forEach(d => {
@@ -408,6 +426,8 @@ function setupEventListeners() {
         updateDashboard(macro, 'ALL');
         highlightMacroOnMap(macro);
         rebuildSpatialLayers(macro, 'ALL');
+        buildOTBsVotacionLayer(macro, 'ALL');
+        actualizarRankingOTB(macro, 'ALL');
         actualizarEtiquetas();
     });
 
@@ -421,6 +441,8 @@ function setupEventListeners() {
         updateDashboard(macro, distrito);
         if (distrito !== 'ALL' && distritoLayer) centerOnDistrito(distrito);
         rebuildSpatialLayers(macro, distrito);
+        buildOTBsVotacionLayer(macro, distrito);
+        actualizarRankingOTB(macro, distrito);
         actualizarEtiquetas();
     });
 
@@ -740,7 +762,6 @@ function updateActivityChart(data) {
     activityChartInstance.activityMujeres = mujeres;
 }
 
-// ---------- EXPLORADOR DE VARIABLES ----------
 function updateExplorerChart(macro, distrito) {
     const selected = variableSelect.value;
     if (!selected) return;
@@ -816,7 +837,7 @@ function updateExplorerChart(macro, distrito) {
     });
 }
 
-// ---------- ACTUALIZAR ETIQUETAS Y ESTILOS SEGÚN FILTRO (CON RESALTADO DE OTB) ----------
+// ---------- ACTUALIZAR ETIQUETAS Y ESTILOS SEGÚN FILTRO ----------
 function actualizarEtiquetas() {
     if (!map || !macroLayer || !distritoLayer) return;
     const zoom = map.getZoom();
@@ -859,7 +880,7 @@ function actualizarEtiquetas() {
         }
     });
 
-    // 3. OTB: ajustar estilo según filtro y resaltado persistente
+    // 3. OTB normal
     if (otbsLayer && otbVisible) {
         const macroFiltrado = seleccionMacro !== 'ALL';
         const distritoFiltrado = seleccionDistrito !== 'ALL';
@@ -869,12 +890,9 @@ function actualizarEtiquetas() {
         otbsLayer.eachLayer(layer => {
             const nombreOTB = layer.feature?.properties[otbNameProp];
             const nombreNorm = nombreOTB ? normalize(nombreOTB) : '';
-
-            // Verificar si esta OTB es la seleccionada (comparación normalizada)
             const esSeleccionada = (otbSeleccionada !== null && nombreNorm === otbSeleccionada);
 
             if (esSeleccionada) {
-                // 🔥 RESALTADO FIJO: amarillo con mayor opacidad y grosor
                 layer.setStyle({
                     color: '#fbbf24',
                     weight: 4,
@@ -884,10 +902,9 @@ function actualizarEtiquetas() {
                     dashArray: null
                 });
                 layer.bringToFront();
-                return; // Saltar el resto
+                return;
             }
 
-            // Si no está seleccionada, aplicar filtro de atenuación o normal
             const otbMacro = layer.feature?.properties.macro_ante;
             const otbDistrito = layer.feature?.properties.distrito;
 
@@ -900,7 +917,6 @@ function actualizarEtiquetas() {
             }
 
             if (hayFiltro && !pertenece) {
-                // Atenuado: gris
                 layer.setStyle({
                     color: '#64748b',
                     fillColor: '#64748b',
@@ -908,7 +924,6 @@ function actualizarEtiquetas() {
                     opacity: 0.4 * opacity
                 });
             } else {
-                // Normal: magenta
                 layer.setStyle({
                     color: '#ec4899',
                     fillColor: '#ec4899',
@@ -1190,6 +1205,35 @@ function setupLayerControls() {
             recintosLayer.setStyle({ fillOpacity: val / 100, opacity: val / 100 * 0.8 });
         }
     });
+
+    // NUEVOS CONTROLES PARA OTB VOTACIÓN
+    const toggleOTBVotacion = document.getElementById('toggle-otb-votacion');
+    const opacityOTBVotacion = document.getElementById('opacity-otb-votacion');
+    const opacityOTBVotacionVal = document.getElementById('opacity-otb-votacion-val');
+
+    toggleOTBVotacion.addEventListener('change', function() {
+        otbsVotacionVisible = this.checked;
+        updateLayerVisibility();
+    });
+
+    opacityOTBVotacion.addEventListener('input', function() {
+        const val = this.value;
+        opacityOTBVotacionVal.innerText = `${val}%`;
+        if (otbsVotacionLayer && otbsVotacionVisible) {
+            const opacity = val / 100;
+            otbsVotacionLayer.eachLayer(layer => {
+                const pct = layer.feature.properties.promedio_v || 0;
+                const color = getQuantileColorOTB(pct);
+                layer.setStyle({
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 1,
+                    opacity: 0.8 * opacity,
+                    fillOpacity: 0.6 * opacity
+                });
+            });
+        }
+    });
 }
 
 function updateLayerVisibility() {
@@ -1208,10 +1252,18 @@ function updateLayerVisibility() {
             map.removeLayer(recintosLayer);
         }
     }
+    if (otbsVotacionLayer) {
+        if (otbsVotacionVisible && !map.hasLayer(otbsVotacionLayer)) {
+            map.addLayer(otbsVotacionLayer);
+            otbsVotacionLayer.bringToFront();
+        } else if (!otbsVotacionVisible && map.hasLayer(otbsVotacionLayer)) {
+            map.removeLayer(otbsVotacionLayer);
+        }
+    }
     actualizarEtiquetas();
 }
 
-// ---------- RECINTOS Y OTB ----------
+// ---------- RECINTOS ----------
 function loadRecintos() {
     fetch('recintos.geojson')
         .then(response => response.json())
@@ -1239,27 +1291,6 @@ function loadRecintos() {
         .catch(err => console.error('Error cargando recintos:', err));
 }
 
-function loadOTBs() {
-    fetch('otbs.geojson')
-        .then(response => response.json())
-        .then(data => {
-            data.features.forEach(f => {
-                if (f.properties.distrito !== undefined && f.properties.distrito !== null) {
-                    f.properties.distrito = toNumber(f.properties.distrito);
-                }
-            });
-            otbsData = data;
-            console.log('OTB cargadas:', otbsData.features.length);
-            updateSelector(otbSelect, otbsData.features, otbNameProp);
-            buildOTBLayer(macroSelect.value, distritoSelect.value);
-            otbVisible = true;
-            document.getElementById('toggle-otb').checked = true;
-            updateLayerVisibility();
-        })
-        .catch(err => console.error('Error cargando OTB:', err));
-}
-
-// ---------- RECINTOS: SIN CAMBIOS ----------
 function buildRecintosLayer(macro, distrito) {
     if (recintosLayer) {
         map.removeLayer(recintosLayer);
@@ -1361,7 +1392,27 @@ function buildRecintosLayer(macro, distrito) {
     console.log('Recintos construidos:', features.length);
 }
 
-// ---------- OTB (CON RESALTADO PERSISTENTE) ----------
+// ---------- OTB NORMAL ----------
+function loadOTBs() {
+    fetch('otbs.geojson')
+        .then(response => response.json())
+        .then(data => {
+            data.features.forEach(f => {
+                if (f.properties.distrito !== undefined && f.properties.distrito !== null) {
+                    f.properties.distrito = toNumber(f.properties.distrito);
+                }
+            });
+            otbsData = data;
+            console.log('OTB cargadas:', otbsData.features.length);
+            updateSelector(otbSelect, otbsData.features, otbNameProp);
+            buildOTBLayer(macroSelect.value, distritoSelect.value);
+            otbVisible = true;
+            document.getElementById('toggle-otb').checked = true;
+            updateLayerVisibility();
+        })
+        .catch(err => console.error('Error cargando OTB:', err));
+}
+
 function buildOTBLayer(macro, distrito) {
     if (otbsLayer) {
         map.removeLayer(otbsLayer);
@@ -1414,12 +1465,10 @@ function buildOTBLayer(macro, distrito) {
             });
 
             layer.on('click', () => {
-                // Al hacer clic, se selecciona la OTB
                 const nombreNorm = normalize(nombre);
                 otbSeleccionada = nombreNorm;
                 otbSelect.value = nombre;
 
-                // Aplicar estilo de resaltado directamente
                 layer.setStyle({
                     color: '#fbbf24',
                     weight: 4,
@@ -1431,8 +1480,6 @@ function buildOTBLayer(macro, distrito) {
                 layer.bringToFront();
                 layer.openPopup();
                 map.fitBounds(layer.getBounds());
-
-                // Restaurar estilo de otras OTB (actualizarEtiquetas se encargará del resto)
                 actualizarEtiquetas();
             });
         }
@@ -1478,7 +1525,6 @@ function updateSelector(selectElement, features, nameProperty) {
     }
 }
 
-// ---------- RESALTADO DESDE SELECTORES ----------
 function highlightOTB(nombre) {
     if (!otbsData) return;
     const nomNorm = normalize(nombre);
@@ -1488,17 +1534,14 @@ function highlightOTB(nombre) {
         return;
     }
 
-    // Guardar selección
     otbSeleccionada = nomNorm;
     centerOnGeometry(feature.geometry);
 
     if (otbsLayer) {
-        // Primero restaurar todas a su estado normal (actualizarEtiquetas luego ajustará)
         const opacity = document.getElementById('opacity-otb').value / 100;
         otbsLayer.eachLayer(layer => {
             const name = layer.feature?.properties[otbNameProp];
             if (name && normalize(name) === nomNorm) {
-                // Aplicar resaltado inmediato
                 layer.setStyle({
                     color: '#fbbf24',
                     weight: 4,
@@ -1510,7 +1553,6 @@ function highlightOTB(nombre) {
                 layer.bringToFront();
                 layer.openPopup();
             } else {
-                // Restaurar a estado normal (magenta) - actualizarEtiquetas lo ajustará
                 layer.setStyle({
                     color: '#ec4899',
                     fillOpacity: 0.15 * opacity,
@@ -1538,6 +1580,204 @@ function resetOTBHighlight() {
         layer.closeTooltip();
     });
     actualizarEtiquetas();
+}
+
+// ---------- NUEVA CAPA: OTB VOTACIÓN ----------
+function loadOTBsVotacion() {
+    fetch('otbs_votacion_ih.geojson')
+        .then(response => response.json())
+        .then(data => {
+            data.features.forEach(f => {
+                if (f.properties.distrito !== undefined && f.properties.distrito !== null) {
+                    f.properties.distrito = toNumber(f.properties.distrito);
+                }
+                f.properties.promedio_v = parseFloat(f.properties.promedio_v) || 0;
+            });
+            otbsVotacionData = data;
+            console.log('OTB votación cargadas:', otbsVotacionData.features.length);
+
+            const valores = data.features.map(f => f.properties.promedio_v).filter(v => v !== undefined && v !== null);
+            if (valores.length > 0) {
+                const sorted = [...valores].sort((a, b) => a - b);
+                const mid = Math.floor(sorted.length / 2);
+                medianVotoOTB = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+                console.log(`Mediana de votación OTB: ${(medianVotoOTB * 100).toFixed(1)}%`);
+            }
+
+            buildOTBsVotacionLayer(macroSelect.value, distritoSelect.value);
+            document.getElementById('toggle-otb-votacion').checked = true;
+            updateLayerVisibility();
+            actualizarRankingOTB(macroSelect.value, distritoSelect.value);
+        })
+        .catch(err => console.error('Error cargando OTB votación:', err));
+}
+
+function buildOTBsVotacionLayer(macro, distrito) {
+    if (otbsVotacionLayer) {
+        map.removeLayer(otbsVotacionLayer);
+        otbsVotacionLayer = null;
+    }
+    if (!otbsVotacionData) return;
+
+    let features = otbsVotacionData.features;
+    const macroNorm = normalize(macro);
+    const distritoNum = distrito !== 'ALL' ? toNumber(distrito) : null;
+
+    if (macro !== 'ALL') {
+        features = features.filter(f => normalize(f.properties.macro_ante) === macroNorm);
+    }
+    if (distrito !== 'ALL') {
+        features = features.filter(f => f.properties.distrito === distritoNum);
+    }
+
+    if (features.length === 0) {
+        console.log('No hay OTB con votación para el filtro actual');
+        return;
+    }
+
+    const opacity = document.getElementById('opacity-otb-votacion').value / 100;
+
+    otbsVotacionLayer = L.geoJSON(features, {
+        style: (feature) => {
+            const pct = feature.properties.promedio_v || 0;
+            const color = getQuantileColorOTB(pct);
+            return {
+                fillColor: color,
+                color: '#ffffff',
+                weight: 1,
+                opacity: 0.8 * opacity,
+                fillOpacity: 0.6 * opacity
+            };
+        },
+        onEachFeature: (feature, layer) => {
+            const nombre = feature.properties.nom_otb || 'OTB';
+            const macro = feature.properties.macro_ante || 'N/D';
+            const dist = feature.properties.distrito || 'N/D';
+            const pct = feature.properties.promedio_v || 0;
+            layer.bindPopup(`
+                <strong>${nombre}</strong><br>
+                Macro: ${macro}<br>
+                Distrito: ${dist}<br>
+                Votación IH promedio: ${(pct*100).toFixed(1)}%
+            `);
+            layer.bindTooltip(nombre, {
+                permanent: false,
+                direction: 'center',
+                className: 'etiqueta-otb-votacion',
+                sticky: true,
+                offset: [0, -5]
+            });
+            layer.on('click', () => {
+                resetOTBVotacionHighlight();
+                layer.setStyle({ color: '#fbbf24', weight: 4, fillOpacity: 0.4 });
+                layer.bringToFront();
+                layer.openPopup();
+                map.fitBounds(layer.getBounds());
+                const option = Array.from(otbSelect.options).find(opt => opt.text === nombre);
+                if (option) otbSelect.value = option.value;
+                highlightOTB(nombre);
+            });
+        }
+    });
+
+    if (otbsVotacionVisible) {
+        map.addLayer(otbsVotacionLayer);
+        otbsVotacionLayer.bringToFront();
+    }
+    console.log('OTB votación construidas:', features.length);
+}
+
+function resetOTBVotacionHighlight() {
+    if (!otbsVotacionLayer) return;
+    const opacity = document.getElementById('opacity-otb-votacion').value / 100;
+    otbsVotacionLayer.eachLayer(layer => {
+        const pct = layer.feature.properties.promedio_v || 0;
+        const color = getQuantileColorOTB(pct);
+        layer.setStyle({
+            fillColor: color,
+            color: '#ffffff',
+            weight: 1,
+            opacity: 0.8 * opacity,
+            fillOpacity: 0.6 * opacity
+        });
+        layer.closePopup();
+        layer.closeTooltip();
+    });
+}
+
+// ---------- RANKING DE OTB POR VOTACIÓN ----------
+function actualizarRankingOTB(macro, distrito) {
+    const container = document.getElementById('otb-ranking-list');
+    if (!container) return;
+    if (!otbsVotacionData) {
+        container.innerHTML = '<span style="color: #64748b;">Cargando datos...</span>';
+        return;
+    }
+
+    let features = otbsVotacionData.features;
+    const macroNorm = normalize(macro);
+    const distritoNum = distrito !== 'ALL' ? toNumber(distrito) : null;
+
+    if (macro !== 'ALL') {
+        features = features.filter(f => normalize(f.properties.macro_ante) === macroNorm);
+    }
+    if (distrito !== 'ALL') {
+        features = features.filter(f => f.properties.distrito === distritoNum);
+    }
+
+    if (features.length === 0) {
+        container.innerHTML = '<span style="color: #64748b;">No hay OTB para esta selección</span>';
+        return;
+    }
+
+    const sorted = [...features].sort((a, b) => (b.properties.promedio_v || 0) - (a.properties.promedio_v || 0));
+
+    let html = '<ul>';
+    const maxItems = 100;
+    const items = sorted.slice(0, maxItems);
+    items.forEach((f, index) => {
+        const nombre = f.properties.nom_otb || 'OTB';
+        const pct = (f.properties.promedio_v || 0) * 100;
+        const color = getQuantileColorOTB(f.properties.promedio_v || 0);
+        html += `<li data-nombre="${nombre}">
+            <span>
+                <span class="color-dot" style="background: ${color};"></span>
+                <span class="rank-name">${index+1}. ${nombre}</span>
+            </span>
+            <span class="rank-pct">${pct.toFixed(1)}%</span>
+        </li>`;
+    });
+    if (sorted.length > maxItems) {
+        html += `<li style="justify-content: center; color: #64748b; padding: 4px 0;">... y ${sorted.length - maxItems} más</li>`;
+    }
+    html += '</ul>';
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('li[data-nombre]').forEach(li => {
+        li.addEventListener('click', () => {
+            const nombre = li.dataset.nombre;
+            const feature = otbsVotacionData.features.find(f => f.properties.nom_otb === nombre);
+            if (feature) {
+                const tempLayer = L.geoJSON(feature);
+                const bounds = tempLayer.getBounds();
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds, { padding: [20, 20] });
+                }
+                if (otbsVotacionLayer) {
+                    resetOTBVotacionHighlight();
+                    otbsVotacionLayer.eachLayer(layer => {
+                        if (layer.feature.properties.nom_otb === nombre) {
+                            layer.setStyle({ color: '#fbbf24', weight: 4, fillOpacity: 0.4 });
+                            layer.bringToFront();
+                            layer.openPopup();
+                        }
+                    });
+                }
+                highlightOTB(nombre);
+            }
+        });
+    });
 }
 
 // ---------- REDIMENSIONAMIENTO ----------
